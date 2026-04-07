@@ -1,7 +1,7 @@
 import random
 import json
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
 import pandas as pd
 import numpy as np
 
@@ -98,7 +98,8 @@ class StockTradingEnv(gym.Env):
     def step(self, action):
         # Execute one time step within the environment
         self._take_action(action)
-        done = False
+        terminated = False
+        truncated = False
 
         self.current_step += 1
 
@@ -113,14 +114,15 @@ class StockTradingEnv(gym.Env):
         reward = 1 if reward > 0 else -100
 
         if self.net_worth <= 0:
-            done = True
+            terminated = True
 
         obs = self._next_observation()
 
-        return obs, reward, done, {}
+        return obs, reward, terminated, truncated, {}
 
-    def reset(self, new_df=None):
+    def reset(self, seed=None, options=None):
         # Reset the state of the environment to an initial state
+        super().reset(seed=seed)
         self.balance = INITIAL_ACCOUNT_BALANCE
         self.net_worth = INITIAL_ACCOUNT_BALANCE
         self.max_net_worth = INITIAL_ACCOUNT_BALANCE
@@ -130,15 +132,15 @@ class StockTradingEnv(gym.Env):
         self.total_sales_value = 0
 
         # pass test dataset to environment
-        if new_df:
-            self.df = new_df
+        if options and options.get('new_df') is not None:
+            self.df = options.get('new_df')
 
         # Set the current step to a random point within the data frame
         # self.current_step = random.randint(
         #     0, len(self.df.loc[:, 'open'].values) - 6)
         self.current_step = 0
 
-        return self._next_observation()
+        return self._next_observation(), {}
 
     def render(self, mode='human', close=False):
         # Render the environment to the screen
