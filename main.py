@@ -1,9 +1,8 @@
 import os
 import pickle
 import pandas as pd
-from stable_baselines.common.policies import MlpPolicy
-from stable_baselines.common.vec_env import DummyVecEnv
-from stable_baselines import PPO2
+from stable_baselines3 import PPO
+from stable_baselines3.common.vec_env import DummyVecEnv
 from rlenv.StockTradingEnv0 import StockTradingEnv
 
 import numpy as np
@@ -23,7 +22,7 @@ def stock_trade(stock_file):
     # The algorithms require a vectorized environment to run
     env = DummyVecEnv([lambda: StockTradingEnv(df)])
 
-    model = PPO2(MlpPolicy, env, verbose=0, tensorboard_log='./log')
+    model = PPO("MlpPolicy", env, verbose=0, tensorboard_log='./log')
     model.learn(total_timesteps=int(1e4))
 
     df_test = pd.read_csv(stock_file.replace('train', 'test'))
@@ -32,10 +31,10 @@ def stock_trade(stock_file):
     obs = env.reset()
     for i in range(len(df_test) - 1):
         action, _states = model.predict(obs)
-        obs, rewards, done, info = env.step(action)
-        profit = env.render()
+        obs, rewards, dones, info = env.step(action)
+        profit = env.envs[0].render()
         day_profits.append(profit)
-        if done:
+        if dones[0]:
             break
     return day_profits
 
@@ -86,4 +85,3 @@ if __name__ == '__main__':
     test_a_stock_trade('sh.600036')
     # ret = find_file('./stockdata/train', '600036')
     # print(ret)
-
